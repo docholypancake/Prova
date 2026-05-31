@@ -1,135 +1,61 @@
 # Prova
 
-**GitHub-native manual QA. PR status checks for human testers.**
+**Manual QA that lives in your pull requests.**
 
-Prova lets a solo developer run manual test cases against a pull request, mark each
-pass/fail/skip/block, and post the result straight to GitHub as a commit status —
-`prova/manual-qa: 8/10 passed`. Bugs found during testing sync to GitHub Issues in
-one click, and every run produces a shareable, no-login report (plus an SVG badge for
-your README).
+Prova is a lightweight tool for running manual test cases against a GitHub pull
+request. Work through your checklist, mark each case pass or fail, and Prova posts the
+result back to the PR as a status check — `prova/manual-qa: 8/10 passed` — right next to
+your CI. Bugs you find become GitHub Issues in one click, and every test run turns into a
+shareable report.
 
----
-
-## Features
-
-- **GitHub OAuth login** — sign in with your GitHub account (httpOnly-cookie JWT).
-- **Projects → Suites → Cases** — nested test suites; rich cases (ID, feature, type,
-  priority, preconditions, test data, steps, expected result, postconditions, rationale, tags).
-- **Test runs + execution UI** — pick cases, run them with keyboard shortcuts
-  (P / F / S / B), attach screenshots by paste (⌘V → Cloudinary), auto-advance.
-- **PR status checks** — completing a run tied to a PR posts a `prova/manual-qa` commit status.
-- **Webhooks** — `pull_request.opened` → in-app notification → one-click "create run for PR".
-- **Bug → GitHub Issue** — turn a failed case into a labeled Issue with steps, expected vs actual, and screenshot.
-- **Shareable reports + badge** — public `/share/:token` report and `/api/badge/:token` SVG.
-- **Dashboard** — pass-rate trend, recent runs, open bugs.
-- **Light / dark theme** — warm espresso theme with clay + olive accents.
-
-## Tech stack
-
-| Layer    | Tech |
-|----------|------|
-| Client   | React + Vite + TailwindCSS + React Query + React Router + Recharts |
-| Server   | Node.js + Express + Mongoose |
-| Database | MongoDB Atlas |
-| Auth     | passport-github2 + JWT in httpOnly cookie |
-| Media    | Cloudinary (screenshots) |
-| GitHub   | @octokit/rest (webhooks, commit statuses, issues) |
-| Deploy   | Railway / Render (API) · Vercel (client) |
-
-## Repo layout
-
-```
-/server   Express API — models, routes, middleware, utils, Dockerfile
-/client   React app — pages, components, contexts, hooks, api
-```
-
-See [`CLAUDE.md`](./CLAUDE.md) for architecture decisions, [`ROADMAP.md`](./ROADMAP.md)
-for feature tracking, and [`TEST_PLAN.md`](./TEST_PLAN.md) for the endpoint test plan.
+Built for solo developers and small teams who want structured manual testing without the
+price tag (or complexity) of TestRail.
 
 ---
 
-## Local development
+## What you can do
 
-### Prerequisites
+- **Sign in with GitHub** — no separate account to manage.
+- **Organize tests** — group test cases into suites. Each case captures everything a
+  tester needs: ID, feature, type, priority, preconditions, test data, steps, expected
+  result, postconditions, and why it matters.
+- **Run a test pass** — pick the cases you want, then execute them one by one. Mark each
+  with a keypress: **P** pass · **F** fail · **S** skip · **B** block. Paste a screenshot
+  (⌘V) straight onto a case.
+- **Get a PR status check** — link a run to a pull request and Prova reports the
+  pass rate on the PR automatically.
+- **Turn bugs into Issues** — a failed case becomes a labeled GitHub Issue with the steps,
+  expected vs. actual, and screenshot, in one click.
+- **Share results** — every run has a public report link (no login needed) and an SVG
+  badge you can drop in a README.
+- **Track progress** — a dashboard shows pass-rate trends, recent runs, and open bugs.
+- **Light or dark** — warm, easy-on-the-eyes theme, your choice.
 
-- Node.js 20+
-- A MongoDB Atlas cluster (free tier)
-- A GitHub OAuth App
-- A Cloudinary account (free tier) — optional, only for screenshot upload
+## How it works
 
-### 1. Server
+1. **Connect a repo.** Open a project, enter your GitHub `owner/repo`, and Prova links it.
+2. **Write your test cases.** Add suites and cases describing what to verify.
+3. **Open a PR** on that repo — Prova notifies you and offers to start a matching test run.
+4. **Run the cases.** Mark pass/fail, attach screenshots, log bugs as you go.
+5. **Finish the run.** Prova posts the status check to the PR and gives you a shareable
+   report. Sync any bugs to GitHub Issues.
 
-```bash
-cd server
-npm install
-cp .env.example .env   # fill in the values (see below)
-npm run dev            # nodemon on http://localhost:5050
-```
+## Pricing
 
-`server/.env`:
-
-```
-MONGO_URI=
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-JWT_SECRET=            # any long random string: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-CLIENT_URL=http://localhost:5173
-WEBHOOK_SECRET=        # random string; used to verify GitHub webhook signatures
-WEBHOOK_URL=https://<ngrok-or-prod>/webhooks/github
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-APP_URL=http://localhost:5050
-PORT=5050
-```
-
-> **GitHub OAuth App** (github.com/settings/developers): set the Authorization callback
-> URL to `http://localhost:5050/auth/github/callback`. The app requests `user:email` and
-> `repo` scopes (the latter is required for webhooks, statuses, and issues).
->
-> **macOS note:** port 5000 is taken by AirPlay Receiver — this project uses **5050**.
-
-### 2. Client
-
-```bash
-cd client
-npm install
-cp .env.example .env   # VITE_API_URL=http://localhost:5050
-npm run dev            # Vite on http://localhost:5173
-```
-
-### 3. (Optional) Expose webhooks locally
-
-```bash
-ngrok http 5050        # put the https URL in WEBHOOK_URL, then reconnect the repo in-app
-```
+- **Free** — 1 project, unlimited test cases & runs, PR status checks, bug → issue sync,
+  shareable reports.
+- **Pro** (coming soon) — unlimited projects, custom report branding, analytics.
 
 ---
 
-## Testing
+## Self-hosting
 
-```bash
-cd server
-npm run test:smoke     # no DB — boot, route mounting, auth guards, webhook signature
-npm test               # full CRUD integration (needs MongoDB; or set TEST_MONGO_URI)
-```
+Prova is open source (MIT). To run your own instance, see **[DEPLOY.md](./DEPLOY.md)** for
+step-by-step deployment, and the deeper technical notes in
+[`CLAUDE.md`](./CLAUDE.md) / [`TEST_PLAN.md`](./TEST_PLAN.md).
 
-API collection for Postman: import `prova.full.postman_collection.json` (49 requests,
-every test-plan case) and set the `token` env var to your `prova_token` cookie value.
-
----
-
-## Deployment
-
-1. Push to GitHub (`.env` is gitignored — keep secrets out of the repo).
-2. **API** → Railway or Render: deploy `/server` (Dockerfile auto-detected); set env vars
-   from `server/.env.production.example` including `NODE_ENV=production`.
-3. **Client** → Vercel: deploy `/client`, set `VITE_API_URL` to the API domain.
-4. Update the GitHub OAuth App callback URL and set `APP_URL`, `CLIENT_URL`, `WEBHOOK_URL`
-   to the production domains.
-5. Reconnect your repo in-app so the webhook registers at the production URL.
-
----
+Stack: React + Vite + Tailwind (web) · Node + Express + MongoDB (API) · Cloudinary
+(screenshots) · GitHub OAuth.
 
 ## License
 
