@@ -1,0 +1,13 @@
+# Render alternative to Railway. Either works — both build the Dockerfile.
+services:
+  - type: web
+    name: prova-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set the rest in the Render dashboard (do NOT commit secrets):
+      # MONGO_URI, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, JWT_SECRET,
+      # CLIENT_URL, WEBHOOK_SECRET, WEBHOOK_URL, APP_URL, CLOUDINARY_*

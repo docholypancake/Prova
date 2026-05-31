@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Design tokens — warm espresso theme, clay + olive accents
+   ============================================================ */
+@layer base {
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --surface-2: #f4eee6;
+    --border: #e7decf;
+    --text: #2a211b;
+    --muted: #7a6c5f;
+    --accent: #a63d40; /* clay */
+    --accent-2: #828c51; /* olive */
+  }
+  .dark {
+    --bg: #1a130e;
+    --surface: #241b14;
+    --surface-2: #2e2319;
+    --border: #3c2f24;
+    --text: #f2ebe3;
+    --muted: #b3a493;
+    --accent: #c25f64;
+    --accent-2: #aeb774;
+    color-scheme: dark;
+  }
+
+  html { scroll-behavior: smooth; background: var(--bg); }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ============================================================
+   Reusable components (friendly / rounded)
+   ============================================================ */
+@layer components {
+  .app-bg { background: var(--bg); color: var(--text); }
+
+  .surface { background: var(--surface); }
+  .surface-2 { background: var(--surface-2); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+  }
+  .card-hover { transition: box-shadow .2s ease, transform .2s ease; }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .25);
+  }
+
+  .text-app { color: var(--text); }
+  .text-muted { color: var(--muted); }
+  .border-app { border-color: var(--border); }
+
+  .input {
+    width: 100%;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: .55rem .8rem;
+    font-size: .875rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .input::placeholder { color: var(--muted); opacity: .7; }
+  .input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  .label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .25rem; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+    border-radius: .75rem; padding: .55rem 1rem; font-size: .875rem; font-weight: 600;
+    transition: all .15s ease; cursor: pointer; white-space: nowrap;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 8px 20px -8px var(--accent); }
+
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover:not(:disabled) { background: var(--surface-2); }
+
+  .btn-danger { background: transparent; color: #c0413f; }
+  .btn-danger:hover:not(:disabled) { text-decoration: underline; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: .3rem;
+    border-radius: 9999px; padding: .15rem .55rem; font-size: .7rem; font-weight: 600;
+    background: var(--surface-2); color: var(--muted);
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .link-muted { color: var(--muted); }
+  .link-muted:hover { color: var(--text); }
+}
+
+@layer utilities {
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); }
+  .text-gradient {
+    background-image: linear-gradient(110deg, var(--accent), var(--accent-2), var(--accent));
+    background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: gradient 8s ease infinite;
+  }
+}
+
+@media print {
+  .print\:hidden { display: none !important; }
+}

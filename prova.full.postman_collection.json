@@ -1,0 +1,450 @@
+{
+  "info": {
+    "name": "Prova API — Full Test Plan",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Every TEST_PLAN case (A/P/S/C) + Day 3 Runs + upload, as runnable requests with pm.test assertions.\n\nSETUP: select env 'Prova — Local', set `token` to your prova_token JWT. Optional: set `tokenB` to a SECOND user's JWT for true 403 ownership checks (without it, those requests get 401 — still proves access denied; assertions accept 401 or 403).\n\nRUN: Collection Runner, top-to-bottom. Folder 0 resets your projects so the free-tier checks are deterministic. The suite runs end-to-end and cleans up after itself."
+  },
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+  "variable": [
+    { "key": "projectId", "value": "" },
+    { "key": "suiteId", "value": "" },
+    { "key": "childSuiteId", "value": "" },
+    { "key": "caseId", "value": "" },
+    { "key": "runId", "value": "" },
+    { "key": "missingId", "value": "000000000000000000000000" }
+  ],
+  "item": [
+    {
+      "name": "0. Reset (delete existing projects)",
+      "item": [
+        {
+          "name": "Reset projects",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 list', () => pm.response.to.have.status(200));",
+            "const projects = pm.response.json().projects || [];",
+            "let done = 0;",
+            "if (projects.length === 0) { pm.test('nothing to reset', () => pm.expect(true).to.be.true); }",
+            "projects.forEach((p) => {",
+            "  pm.sendRequest({ url: pm.environment.get('API') + '/api/projects/' + p._id, method: 'DELETE', header: { Authorization: 'Bearer ' + pm.environment.get('token') } }, (err, res) => {",
+            "    done++;",
+            "    if (done === projects.length) pm.test('reset ' + projects.length + ' project(s)', () => pm.expect(true).to.be.true);",
+            "  });",
+            "});"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } }
+        }
+      ]
+    },
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "A4 GET /auth/me -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('has user', () => pm.expect(pm.response.json()).to.have.property('user'));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/auth/me", "host": ["{{API}}"], "path": ["auth", "me"] } }
+        }
+      ]
+    },
+    {
+      "name": "2. Projects",
+      "item": [
+        {
+          "name": "P3 POST no name -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));",
+            "pm.test('errors present', () => pm.expect(pm.response.json()).to.have.property('errors'));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } }
+        },
+        {
+          "name": "P4 POST create -> 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "const p = pm.response.json().project;",
+            "pm.collectionVariables.set('projectId', p._id);",
+            "pm.test('name', () => pm.expect(p.name).to.eql('Proj A'));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Proj A\",\n  \"description\": \"first\"\n}" }, "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } }
+        },
+        {
+          "name": "P5 POST 2nd (free tier) -> 403",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 free-tier cap', () => pm.response.to.have.status(403));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Proj B\"\n}" }, "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } }
+        },
+        {
+          "name": "P1 GET list -> 200, has 1",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('exactly 1 project', () => pm.expect(pm.response.json().projects.length).to.eql(1));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } }
+        },
+        {
+          "name": "P7 GET one -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/projects/{{projectId}}", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}"] } }
+        },
+        {
+          "name": "P9 GET bad id -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/projects/not-an-id", "host": ["{{API}}"], "path": ["api", "projects", "not-an-id"] } }
+        },
+        {
+          "name": "P10 GET missing -> 404",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/projects/{{missingId}}", "host": ["{{API}}"], "path": ["api", "projects", "{{missingId}}"] } }
+        },
+        {
+          "name": "P11 PUT rename -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('renamed', () => pm.expect(pm.response.json().project.name).to.eql('Proj A renamed'));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Proj A renamed\"\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}"] } }
+        },
+        {
+          "name": "P12 PUT empty name -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}"] } }
+        },
+        {
+          "name": "P14 PUT github -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('github.owner set', () => pm.expect(pm.response.json().project.github.owner).to.eql('o'));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"github\": { \"owner\": \"o\", \"repo\": \"r\" }\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "3. Suites",
+      "item": [
+        {
+          "name": "S4 POST no name -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}/suites", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "suites"] } }
+        },
+        {
+          "name": "S5 POST root suite -> 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "const s = pm.response.json().suite;",
+            "pm.collectionVariables.set('suiteId', s._id);",
+            "pm.test('parentId null', () => pm.expect(s.parentId).to.eql(null));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Smoke\"\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}/suites", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "suites"] } }
+        },
+        {
+          "name": "S6 POST child suite -> 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('childSuiteId', pm.response.json().suite._id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Login\",\n  \"parentId\": \"{{suiteId}}\"\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}/suites", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "suites"] } }
+        },
+        {
+          "name": "S7 POST bad parentId -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"x\",\n  \"parentId\": \"bad\"\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}/suites", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "suites"] } }
+        },
+        {
+          "name": "S1 GET tree -> 1 root, 1 child",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "const s = pm.response.json().suites;",
+            "pm.test('1 root', () => pm.expect(s.length).to.eql(1));",
+            "pm.test('1 child', () => pm.expect(s[0].children.length).to.eql(1));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/projects/{{projectId}}/suites", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "suites"] } }
+        },
+        {
+          "name": "S3 GET suites bad project id -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/projects/not-an-id/suites", "host": ["{{API}}"], "path": ["api", "projects", "not-an-id", "suites"] } }
+        },
+        {
+          "name": "S9 PUT rename suite -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Smoke v2\"\n}" }, "url": { "raw": "{{API}}/api/suites/{{suiteId}}", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}"] } }
+        },
+        {
+          "name": "S10 PUT empty name -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "{{API}}/api/suites/{{suiteId}}", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}"] } }
+        },
+        {
+          "name": "S12a PUT bad id -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"x\"\n}" }, "url": { "raw": "{{API}}/api/suites/bad-id", "host": ["{{API}}"], "path": ["api", "suites", "bad-id"] } }
+        },
+        {
+          "name": "S12b PUT missing -> 404",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"x\"\n}" }, "url": { "raw": "{{API}}/api/suites/{{missingId}}", "host": ["{{API}}"], "path": ["api", "suites", "{{missingId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "4. Cases",
+      "item": [
+        {
+          "name": "C4 POST no title -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"steps\": [\"x\"]\n}" }, "url": { "raw": "{{API}}/api/suites/{{suiteId}}/cases", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}", "cases"] } }
+        },
+        {
+          "name": "C5 POST bad priority -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"T\",\n  \"priority\": \"P9\"\n}" }, "url": { "raw": "{{API}}/api/suites/{{suiteId}}/cases", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}", "cases"] } }
+        },
+        {
+          "name": "C6 POST steps not array -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"T\",\n  \"steps\": \"notarray\"\n}" }, "url": { "raw": "{{API}}/api/suites/{{suiteId}}/cases", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}", "cases"] } }
+        },
+        {
+          "name": "C7 POST full valid -> 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "const c = pm.response.json().case;",
+            "pm.collectionVariables.set('caseId', c._id);",
+            "pm.test('3 steps', () => pm.expect(c.steps.length).to.eql(3));",
+            "pm.test('P0', () => pm.expect(c.priority).to.eql('P0'));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"User can log in\",\n  \"testCaseId\": \"AUTH-LOGIN-01\",\n  \"feature\": \"Auth\",\n  \"type\": \"Functional\",\n  \"priority\": \"P0\",\n  \"preconditions\": \"account exists\",\n  \"testData\": \"valid creds\",\n  \"steps\": [\"open login\", \"enter creds\", \"submit\"],\n  \"expectedResult\": \"redirected to dashboard\",\n  \"postconditions\": \"session active\",\n  \"rationale\": \"core path\",\n  \"tags\": [\"smoke\", \"auth\"]\n}" }, "url": { "raw": "{{API}}/api/suites/{{suiteId}}/cases", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}", "cases"] } }
+        },
+        {
+          "name": "C1 GET cases -> 200, 1 case",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('1 case', () => pm.expect(pm.response.json().cases.length).to.eql(1));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/suites/{{suiteId}}/cases", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}", "cases"] } }
+        },
+        {
+          "name": "C9 PUT update -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "const c = pm.response.json().case;",
+            "pm.test('title edited', () => pm.expect(c.title).to.eql('User can log in (edited)'));",
+            "pm.test('P1', () => pm.expect(c.priority).to.eql('P1'));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"User can log in (edited)\",\n  \"priority\": \"P1\"\n}" }, "url": { "raw": "{{API}}/api/cases/{{caseId}}", "host": ["{{API}}"], "path": ["api", "cases", "{{caseId}}"] } }
+        },
+        {
+          "name": "C10 PUT bad priority -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"priority\": \"nope\"\n}" }, "url": { "raw": "{{API}}/api/cases/{{caseId}}", "host": ["{{API}}"], "path": ["api", "cases", "{{caseId}}"] } }
+        },
+        {
+          "name": "C3a GET cases bad suite id -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/suites/bad-id/cases", "host": ["{{API}}"], "path": ["api", "suites", "bad-id", "cases"] } }
+        },
+        {
+          "name": "C3b GET cases missing suite -> 404",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/suites/{{missingId}}/cases", "host": ["{{API}}"], "path": ["api", "suites", "{{missingId}}", "cases"] } }
+        }
+      ]
+    },
+    {
+      "name": "5. Ownership 403 (needs tokenB)",
+      "description": "Set env `tokenB` to a SECOND user's JWT for real 403. Without it requests are unauthenticated -> 401. Assertions accept 401 or 403 (both prove access denied).",
+      "item": [
+        {
+          "name": "P8 GET project as non-owner",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{tokenB}}", "type": "string" }] }, "method": "GET", "url": { "raw": "{{API}}/api/projects/{{projectId}}", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 or 403', () => pm.expect([401,403]).to.include(pm.response.code));"
+          ] } }]
+        },
+        {
+          "name": "S2 GET suites as non-owner",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{tokenB}}", "type": "string" }] }, "method": "GET", "url": { "raw": "{{API}}/api/projects/{{projectId}}/suites", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "suites"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 or 403', () => pm.expect([401,403]).to.include(pm.response.code));"
+          ] } }]
+        },
+        {
+          "name": "C11 PUT case as non-owner",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{tokenB}}", "type": "string" }] }, "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"hax\"\n}" }, "url": { "raw": "{{API}}/api/cases/{{caseId}}", "host": ["{{API}}"], "path": ["api", "cases", "{{caseId}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 or 403', () => pm.expect([401,403]).to.include(pm.response.code));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "6. Runs (Day 3)",
+      "item": [
+        {
+          "name": "R1 POST create run no name -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"selectedCaseIds\": [\"{{caseId}}\"]\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}/runs", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "runs"] } }
+        },
+        {
+          "name": "R2 POST create run empty cases -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"R\",\n  \"selectedCaseIds\": []\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}/runs", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "runs"] } }
+        },
+        {
+          "name": "R3 POST create run -> 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "const run = pm.response.json().run;",
+            "pm.collectionVariables.set('runId', run._id);",
+            "pm.test('1 case pending', () => { pm.expect(run.cases.length).to.eql(1); pm.expect(run.cases[0].result).to.eql('pending'); });",
+            "pm.test('has shareToken', () => pm.expect(run.shareToken).to.be.a('string'));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Regression run\",\n  \"selectedCaseIds\": [\"{{caseId}}\"]\n}" }, "url": { "raw": "{{API}}/api/projects/{{projectId}}/runs", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}", "runs"] } }
+        },
+        {
+          "name": "R4 GET run (populated) -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('case populated', () => pm.expect(pm.response.json().run.cases[0].testCaseId).to.have.property('title'));"
+          ] } }],
+          "request": { "method": "GET", "url": { "raw": "{{API}}/api/runs/{{runId}}", "host": ["{{API}}"], "path": ["api", "runs", "{{runId}}"] } }
+        },
+        {
+          "name": "R5 PUT case result passed -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('passed', () => { const c = pm.response.json().run.cases[0]; pm.expect(c.result).to.eql('passed'); });"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"result\": \"passed\"\n}" }, "url": { "raw": "{{API}}/api/runs/{{runId}}/cases/{{caseId}}", "host": ["{{API}}"], "path": ["api", "runs", "{{runId}}", "cases", "{{caseId}}"] } }
+        },
+        {
+          "name": "R6 PUT bad result -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"result\": \"explode\"\n}" }, "url": { "raw": "{{API}}/api/runs/{{runId}}/cases/{{caseId}}", "host": ["{{API}}"], "path": ["api", "runs", "{{runId}}", "cases", "{{caseId}}"] } }
+        },
+        {
+          "name": "R7 POST complete -> 200 (passed)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('status passed', () => pm.expect(pm.response.json().run.status).to.eql('passed'));"
+          ] } }],
+          "request": { "method": "POST", "url": { "raw": "{{API}}/api/runs/{{runId}}/complete", "host": ["{{API}}"], "path": ["api", "runs", "{{runId}}", "complete"] } }
+        },
+        {
+          "name": "R8 POST upload no image -> 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 validation', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": { "raw": "{{API}}/api/upload", "host": ["{{API}}"], "path": ["api", "upload"] } }
+        }
+      ]
+    },
+    {
+      "name": "7. Guards (no auth)",
+      "description": "Order-independent.",
+      "item": [
+        {
+          "name": "A1 GET projects no auth -> 401",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "A2 garbage token -> 401",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "garbage.jwt.value", "type": "string" }] }, "method": "GET", "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "A3 GET /auth/me no auth -> 401",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{API}}/auth/me", "host": ["{{API}}"], "path": ["auth", "me"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401', () => pm.response.to.have.status(401));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "8. Cleanup (cascade)",
+      "item": [
+        {
+          "name": "C13 DELETE case -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "DELETE", "url": { "raw": "{{API}}/api/cases/{{caseId}}", "host": ["{{API}}"], "path": ["api", "cases", "{{caseId}}"] } }
+        },
+        {
+          "name": "S13 DELETE suite (cascade) -> 200, deletedSuites 2",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('deleted parent + child', () => pm.expect(pm.response.json().deletedSuites).to.eql(2));"
+          ] } }],
+          "request": { "method": "DELETE", "url": { "raw": "{{API}}/api/suites/{{suiteId}}", "host": ["{{API}}"], "path": ["api", "suites", "{{suiteId}}"] } }
+        },
+        {
+          "name": "P15 DELETE project (cascade) -> 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "DELETE", "url": { "raw": "{{API}}/api/projects/{{projectId}}", "host": ["{{API}}"], "path": ["api", "projects", "{{projectId}}"] } }
+        },
+        {
+          "name": "P17 POST create again (slot freed) -> 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "const p = pm.response.json().project;",
+            "pm.sendRequest({ url: pm.environment.get('API') + '/api/projects/' + p._id, method: 'DELETE', header: { Authorization: 'Bearer ' + pm.environment.get('token') } }, () => {});"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Fresh\"\n}" }, "url": { "raw": "{{API}}/api/projects", "host": ["{{API}}"], "path": ["api", "projects"] } }
+        }
+      ]
+    }
+  ]
+}
