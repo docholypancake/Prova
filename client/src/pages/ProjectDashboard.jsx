@@ -15,7 +15,7 @@ export default function ProjectDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: project } = useQuery({ queryKey: ['project', id], queryFn: () => getProject(id) });
-  const { data, isLoading } = useQuery({ queryKey: ['stats', id], queryFn: () => getProjectStats(id) });
+  const { data, isLoading, isError } = useQuery({ queryKey: ['stats', id], queryFn: () => getProjectStats(id) });
 
   const stats = data?.stats;
   const recentRuns = data?.recentRuns || [];
@@ -34,6 +34,10 @@ export default function ProjectDashboard() {
 
       {isLoading ? (
         <p className="mt-6 text-muted">Loading…</p>
+      ) : isError || !stats ? (
+        <div className="card mt-6 p-8 text-center text-muted">
+          Couldn’t load dashboard stats. Try reloading.
+        </div>
       ) : (
         <>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
