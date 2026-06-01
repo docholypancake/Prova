@@ -33,6 +33,38 @@ router.get(
   }
 );
 
+// ── Dev-only bypass login (never active in production) ────────
+// Creates/reuses a local dev user and sets a JWT cookie so you can
+// test the UI without going through GitHub OAuth.
+if (process.env.NODE_ENV !== 'production') {
+  const User = require('../models/User');
+
+  router.get('/dev-login', async (req, res) => {
+    try {
+      let user = await User.findOne({ githubId: 'dev_local_bypass' });
+      if (!user) {
+        user = await User.create({
+          githubId:  'dev_local_bypass',
+          username:  'dev',
+          email:     'dev@localhost',
+          avatar:    null,
+          plan:      'free',
+        });
+      }
+      const token = signToken({
+        id:          user._id.toString(),
+        githubId:    user.githubId,
+        username:    user.username,
+        accessToken: 'dev_no_github_token',
+      });
+      setAuthCookie(res, token);
+      res.redirect(`${CLIENT_URL}/dashboard`);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+}
+
 // Logout
 router.post('/logout', (req, res) => {
   clearAuthCookie(res);

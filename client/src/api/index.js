@@ -12,6 +12,10 @@ export const logout = () => api.post('/auth/logout').then((r) => r.data);
 // GitHub OAuth is a full-page redirect, not an XHR.
 export const githubLoginUrl = () => `${import.meta.env.VITE_API_URL}/auth/github`;
 
+// Dev bypass — only shown/active during `npm run dev` (Vite sets DEV=true automatically).
+export const devLoginUrl = () => `${import.meta.env.VITE_API_URL}/auth/dev-login`;
+export const isDevMode   = () => import.meta.env.DEV === true;
+
 // --- Projects ---
 export const listProjects = () => api.get('/api/projects').then((r) => r.data.projects);
 export const getProject = (id) => api.get(`/api/projects/${id}`).then((r) => r.data.project);
