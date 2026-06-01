@@ -6,12 +6,14 @@ export default function Login() {
   return (
     <div className="app-bg relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4">
       <div className="absolute right-4 top-4 z-10"><ThemeToggle /></div>
-      <div className="pointer-events-none absolute -top-24 -left-24 animate-float">
-        <div className="h-72 w-72 rounded-full bg-clay-500/15 blur-3xl" />
-      </div>
-      <div className="pointer-events-none absolute -bottom-24 -right-24 animate-float" style={{ animationDelay: '2s' }}>
-        <div className="h-72 w-72 rounded-full bg-olive-500/15 blur-3xl" />
-      </div>
+      <div
+        className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] animate-float"
+        style={{ background: 'radial-gradient(circle, rgba(166,61,64,0.11), transparent 70%)' }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-40 -right-40 h-[36rem] w-[36rem] animate-float"
+        style={{ animationDelay: '2s', background: 'radial-gradient(circle, rgba(130,140,81,0.11), transparent 70%)' }}
+      />
 
       <div className="card w-full max-w-sm animate-fade-up p-8 text-center shadow-2xl">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-clay-500 to-olive-500 text-white shadow-lg">

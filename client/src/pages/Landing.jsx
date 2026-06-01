@@ -39,13 +39,21 @@ export default function Landing() {
       </nav>
 
       <header className="relative overflow-hidden px-6 pb-24 pt-40">
-        {/* Parallax on the wrapper; blur on a non-transformed child (prevents filter-clipping to a box). */}
-        <div className="pointer-events-none absolute left-1/2 top-10 -translate-x-1/2" style={{ transform: `translate(-50%, ${scrollY * 0.25}px)` }}>
-          <div className="h-[480px] w-[480px] rounded-full bg-clay-500/20 blur-3xl" />
-        </div>
-        <div className="pointer-events-none absolute right-10 top-60" style={{ transform: `translateY(${scrollY * -0.15}px)` }}>
-          <div className="h-40 w-40 rounded-full bg-olive-500/25 blur-2xl" />
-        </div>
+        {/* Soft glows via radial-gradient (no blur filter → no rectangular clipping on scroll). */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-[-140px] h-[820px] w-[820px]"
+          style={{
+            transform: `translate(-50%, ${scrollY * 0.25}px)`,
+            background: 'radial-gradient(circle, rgba(166,61,64,0.13), transparent 70%)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute right-[-220px] top-24 h-[720px] w-[720px]"
+          style={{
+            transform: `translateY(${scrollY * -0.15}px)`,
+            background: 'radial-gradient(circle, rgba(130,140,81,0.11), transparent 70%)',
+          }}
+        />
         <div className="relative mx-auto max-w-3xl text-center">
           <div className="card mb-5 inline-flex animate-fade-in items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold text-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-olive-500" /> Free forever for solo devs
