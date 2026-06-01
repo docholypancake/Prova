@@ -8,6 +8,7 @@ const validate = require('../middleware/validate');
 const Project = require('../models/Project');
 const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
+const posthog = require('../utils/posthog');
 
 const router = express.Router();
 router.use(auth);
@@ -98,6 +99,17 @@ router.post('/suites/:id/cases', loadSuite, caseValidators, validate, async (req
       if (req.body[f] !== undefined) data[f] = req.body[f];
     });
     const testCase = await TestCase.create(data);
+    posthog.capture({
+      distinctId: req.user._id.toString(),
+      event: 'test case created',
+      properties: {
+        case_id: testCase._id.toString(),
+        suite_id: req.suite._id.toString(),
+        project_id: req.suite.projectId.toString(),
+        priority: testCase.priority || null,
+        has_steps: !!(testCase.steps && testCase.steps.length > 0),
+      },
+    });
     res.status(201).json({ case: testCase });
   } catch (err) {
     next(err);

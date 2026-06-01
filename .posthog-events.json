@@ -1,0 +1,62 @@
+[
+  {
+    "event": "user_signed_in",
+    "description": "Fired when a user completes GitHub OAuth and receives a JWT. Distinguishes new signups from returning logins based on whether the user was just created.",
+    "file": "server/routes/auth.js"
+  },
+  {
+    "event": "project_created",
+    "description": "Fired when a user creates a new QA project. Tracks the name and whether a GitHub repo was linked at creation time.",
+    "file": "server/routes/projects.js"
+  },
+  {
+    "event": "project_deleted",
+    "description": "Fired when a user deletes a project, including all cascaded children. Useful for churn signals.",
+    "file": "server/routes/projects.js"
+  },
+  {
+    "event": "github_repo_connected",
+    "description": "Fired when a user connects a GitHub repo to a project and registers a webhook. Key activation event.",
+    "file": "server/routes/github.js"
+  },
+  {
+    "event": "github_repo_disconnected",
+    "description": "Fired when a user disconnects a GitHub repo from a project.",
+    "file": "server/routes/github.js"
+  },
+  {
+    "event": "test_suite_created",
+    "description": "Fired when a user creates a test suite within a project.",
+    "file": "server/routes/suites.js"
+  },
+  {
+    "event": "test_case_created",
+    "description": "Fired when a user adds a new test case to a suite.",
+    "file": "server/routes/cases.js"
+  },
+  {
+    "event": "test_run_started",
+    "description": "Fired when a user starts a new test run against a set of cases. Tracks whether the run is tied to a PR.",
+    "file": "server/routes/runs.js"
+  },
+  {
+    "event": "test_run_completed",
+    "description": "Fired when a test run is finalized. Core value-delivery event — includes pass/fail counts and whether a PR status check was posted.",
+    "file": "server/routes/runs.js"
+  },
+  {
+    "event": "bug_reported",
+    "description": "Fired when a user files a bug report, optionally linked to a test run and case. Tracks severity.",
+    "file": "server/routes/bugs.js"
+  },
+  {
+    "event": "bug_synced_to_github",
+    "description": "Fired when a user syncs a bug report to a GitHub Issue. Key feature-adoption metric.",
+    "file": "server/routes/bugs.js"
+  },
+  {
+    "event": "pr_webhook_received",
+    "description": "Fired when GitHub delivers a pull_request webhook and Prova creates a PR-opened notification. Server-side event capturing inbound GitHub activity.",
+    "file": "server/routes/webhooks.js"
+  }
+]

@@ -12,6 +12,7 @@ const TestRun = require('../models/TestRun');
 const BugReport = require('../models/BugReport');
 const Notification = require('../models/Notification');
 const { deleteWebhook } = require('../utils/github');
+const posthog = require('../utils/posthog');
 
 const router = express.Router();
 
@@ -55,6 +56,15 @@ router.post(
         github: {
           owner: req.body.github?.owner || null,
           repo: req.body.github?.repo || null,
+        },
+      });
+      posthog.capture({
+        distinctId: req.user._id.toString(),
+        event: 'project created',
+        properties: {
+          project_id: project._id.toString(),
+          project_name: project.name,
+          has_github_repo: !!(req.body.github?.owner && req.body.github?.repo),
         },
       });
       res.status(201).json({ project });
@@ -121,6 +131,15 @@ router.delete('/:id', loadProject('id'), async (req, res, next) => {
     await BugReport.deleteMany({ projectId });
     await Notification.deleteMany({ projectId });
     await req.project.deleteOne();
+    posthog.capture({
+      distinctId: req.user._id.toString(),
+      event: 'project deleted',
+      properties: {
+        project_id: projectId.toString(),
+        project_name: req.project.name,
+        had_github_repo: !!req.project.github?.owner,
+      },
+    });
     res.json({ ok: true });
   } catch (err) {
     next(err);

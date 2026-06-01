@@ -3,6 +3,7 @@ const crypto = require('crypto');
 
 const Project = require('../models/Project');
 const Notification = require('../models/Notification');
+const posthog = require('../utils/posthog');
 
 const router = express.Router();
 
@@ -43,6 +44,16 @@ router.post('/github', async (req, res) => {
           prNumber: pr.number,
           prTitle: pr.title,
           prSha: pr.head?.sha || null,
+        });
+        posthog.capture({
+          distinctId: project.owner.toString(),
+          event: 'pr webhook received',
+          properties: {
+            project_id: project._id.toString(),
+            github_repo: `${owner}/${name}`,
+            pr_number: pr.number,
+            has_sha: !!pr.head?.sha,
+          },
         });
       }
     }

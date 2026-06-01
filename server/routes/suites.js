@@ -9,6 +9,7 @@ const { loadProject } = require('../middleware/ownership');
 const Project = require('../models/Project');
 const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
+const posthog = require('../utils/posthog');
 
 const router = express.Router();
 router.use(auth);
@@ -75,6 +76,15 @@ router.post(
         description: req.body.description || '',
         parentId: req.body.parentId || null,
         order: req.body.order ?? 0,
+      });
+      posthog.capture({
+        distinctId: req.user._id.toString(),
+        event: 'test suite created',
+        properties: {
+          suite_id: suite._id.toString(),
+          project_id: req.project._id.toString(),
+          is_child_suite: !!req.body.parentId,
+        },
       });
       res.status(201).json({ suite });
     } catch (err) {

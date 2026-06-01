@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { loadProject } = require('../middleware/ownership');
 const { registerWebhook, deleteWebhook } = require('../utils/github');
+const posthog = require('../utils/posthog');
 
 const router = express.Router();
 router.use(auth);
@@ -51,6 +52,16 @@ router.post(
       req.project.webhookId = webhookId;
       await req.project.save();
 
+      posthog.capture({
+        distinctId: req.user._id.toString(),
+        event: 'github repo connected',
+        properties: {
+          project_id: req.project._id.toString(),
+          github_owner: owner,
+          github_repo: repo,
+          webhook_registered: !!webhookId,
+        },
+      });
       res.json({
         project: req.project,
         webhookRegistered: !!webhookId,
@@ -77,9 +88,20 @@ router.post('/projects/:id/github/disconnect', loadProject('id'), async (req, re
         console.error('[github] webhook delete failed:', err.message);
       }
     }
+    const prevOwner = req.project.github?.owner;
+    const prevRepo = req.project.github?.repo;
     req.project.github = { owner: null, repo: null };
     req.project.webhookId = null;
     await req.project.save();
+    posthog.capture({
+      distinctId: req.user._id.toString(),
+      event: 'github repo disconnected',
+      properties: {
+        project_id: req.project._id.toString(),
+        github_owner: prevOwner,
+        github_repo: prevRepo,
+      },
+    });
     res.json({ project: req.project });
   } catch (err) {
     next(err);

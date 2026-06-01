@@ -11,6 +11,7 @@ const Project = require('../models/Project');
 const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
 const { postStatus } = require('../utils/github');
+const posthog = require('../utils/posthog');
 
 const router = express.Router();
 router.use(auth);
@@ -82,6 +83,17 @@ router.post(
         createdBy: req.user._id,
         status: 'in_progress',
       });
+      posthog.capture({
+        distinctId: req.user._id.toString(),
+        event: 'test run started',
+        properties: {
+          run_id: run._id.toString(),
+          run_name: run.name,
+          project_id: req.project._id.toString(),
+          case_count: run.cases.length,
+          linked_to_pr: !!req.body.githubPR?.sha,
+        },
+      });
       res.status(201).json({ run });
     } catch (err) {
       next(err);
@@ -148,6 +160,21 @@ router.post('/runs/:id/complete', loadRun, async (req, res, next) => {
       }
     }
 
+    posthog.capture({
+      distinctId: req.user._id.toString(),
+      event: 'test run completed',
+      properties: {
+        run_id: req.run._id.toString(),
+        run_name: req.run.name,
+        project_id: req.project._id.toString(),
+        total_cases: total,
+        passed_cases: passed,
+        failed_or_blocked: failedOrBlocked,
+        run_status: req.run.status,
+        linked_to_pr: !!req.run.githubPR?.sha,
+        pr_status_posted: !!(req.run.githubPR?.sha && req.project.github?.owner),
+      },
+    });
     res.json({ run: req.run, summary: { total, passed } });
   } catch (err) {
     next(err);

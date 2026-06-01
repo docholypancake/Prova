@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { loadProject } = require('../middleware/ownership');
 const { createIssue } = require('../utils/github');
+const posthog = require('../utils/posthog');
 
 const Project = require('../models/Project');
 const TestCase = require('../models/TestCase');
@@ -82,6 +83,18 @@ router.post(
         }
       }
 
+      posthog.capture({
+        distinctId: req.user._id.toString(),
+        event: 'bug reported',
+        properties: {
+          bug_id: bug._id.toString(),
+          project_id: req.project._id.toString(),
+          severity: bug.severity,
+          linked_to_run: !!req.body.runId,
+          linked_to_case: !!req.body.testCaseId,
+          has_screenshot: !!req.body.screenshotUrl,
+        },
+      });
       res.status(201).json({ bug });
     } catch (err) {
       next(err);
@@ -129,6 +142,17 @@ router.post('/bugs/:id/github-sync', loadBug, async (req, res, next) => {
 
     req.bug.github = { issueNumber: issue.number, issueUrl: issue.url };
     await req.bug.save();
+    posthog.capture({
+      distinctId: req.user._id.toString(),
+      event: 'bug synced to github',
+      properties: {
+        bug_id: req.bug._id.toString(),
+        project_id: req.project._id.toString(),
+        github_repo: `${req.project.github.owner}/${req.project.github.repo}`,
+        issue_number: issue.number,
+        severity: req.bug.severity,
+      },
+    });
     res.json({ bug: req.bug });
   } catch (err) {
     next(err);

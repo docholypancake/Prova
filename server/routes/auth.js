@@ -2,6 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const { signToken, setAuthCookie, clearAuthCookie } = require('../utils/jwt');
 const auth = require('../middleware/auth');
+const posthog = require('../utils/posthog');
 
 const router = express.Router();
 
@@ -29,6 +30,30 @@ router.get(
       accessToken, // cached GitHub OAuth token (no separate token store)
     });
     setAuthCookie(res, token);
+
+    const distinctId = user._id.toString();
+    posthog.identify({
+      distinctId,
+      properties: {
+        $set: {
+          username: user.username,
+          email: user.email,
+          plan: user.plan,
+          avatar: user.avatar,
+        },
+        $set_once: { first_login: new Date().toISOString() },
+      },
+    });
+    posthog.capture({
+      distinctId,
+      event: 'user signed in',
+      properties: {
+        username: user.username,
+        github_id: user.githubId,
+        plan: user.plan,
+      },
+    });
+
     res.redirect(`${CLIENT_URL}/dashboard`);
   }
 );
