@@ -6,6 +6,7 @@ import {
   listCases, createCase, updateCase, deleteCase,
   connectGitHub, disconnectGitHub,
 } from '../api';
+import toast from 'react-hot-toast';
 import AppShell from '../components/AppShell';
 
 const PRIORITIES = ['P0', 'P1', 'P2', 'P3'];
@@ -92,10 +93,10 @@ function GitHubPanel({ projectId, project }) {
 
   const connect = useMutation({
     mutationFn: () => connectGitHub(projectId, { owner: owner.trim(), repo: repo.trim() }),
-    onSuccess: (data) => { setMsg(data.warning || 'Connected'); refresh(); },
-    onError: (err) => setMsg(err.response?.data?.error || 'Failed'),
+    onSuccess: (data) => { setMsg(data.warning || 'Connected'); refresh(); data.warning ? toast(data.warning) : toast.success('Repo connected'); },
+    onError: (err) => { const m = err.response?.data?.error || 'Failed'; setMsg(m); toast.error(m); },
   });
-  const disconnect = useMutation({ mutationFn: () => disconnectGitHub(projectId), onSuccess: () => { setMsg(''); refresh(); } });
+  const disconnect = useMutation({ mutationFn: () => disconnectGitHub(projectId), onSuccess: () => { setMsg(''); refresh(); toast.success('Repo disconnected'); } });
 
   return (
     <div className="card p-4">

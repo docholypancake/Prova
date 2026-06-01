@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { listProjects, createProject, deleteProject } from '../api';
 import AppShell from '../components/AppShell';
+import { CardSkeleton } from '../components/Skeleton';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -16,7 +18,7 @@ export default function Dashboard() {
 
   const del = useMutation({
     mutationFn: deleteProject,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['projects'] }); toast.success('Project deleted'); },
   });
 
   return (
@@ -32,7 +34,10 @@ export default function Dashboard() {
       </div>
 
       {isLoading ? (
-        <p className="mt-8 text-muted">Loading…</p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
       ) : projects.length === 0 ? (
         <div className="card mt-8 border-dashed p-12 text-center">
           <p className="text-muted">No projects yet — create your first one.</p>
@@ -81,6 +86,7 @@ function CreateProjectModal({ onClose }) {
     mutationFn: createProject,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Project created');
       onClose();
     },
     onError: (err) => setError(err.response?.data?.error || 'Failed to create project'),

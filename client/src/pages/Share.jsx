@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import toast from 'react-hot-toast';
 import { getSharedReport, badgeUrl, shareUrl } from '../api';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -65,7 +66,7 @@ export default function Share() {
         </div>
 
         <div className="mt-4 flex gap-2 print:hidden">
-          <button onClick={() => { navigator.clipboard.writeText(shareUrl(token)); alert('Link copied'); }} className="btn btn-ghost">Copy shareable link</button>
+          <button onClick={() => { navigator.clipboard.writeText(shareUrl(token)); toast.success('Link copied'); }} className="btn btn-ghost">Copy shareable link</button>
           <button onClick={() => window.print()} className="btn btn-ghost">Download PDF</button>
         </div>
 

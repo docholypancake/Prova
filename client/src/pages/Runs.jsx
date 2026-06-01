@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import {
   getProject, listSuites, listCases, listRuns, createRun,
   listBugs, syncBugToGitHub, deleteBug,
@@ -77,8 +78,8 @@ function BugList({ projectId }) {
   const queryClient = useQueryClient();
   const { data: bugs = [] } = useQuery({ queryKey: ['bugs', projectId], queryFn: () => listBugs(projectId) });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
-  const sync = useMutation({ mutationFn: syncBugToGitHub, onSuccess: refresh });
-  const del = useMutation({ mutationFn: deleteBug, onSuccess: refresh });
+  const sync = useMutation({ mutationFn: syncBugToGitHub, onSuccess: (bug) => { refresh(); toast.success(`Synced to GitHub Issue #${bug.github?.issueNumber}`); }, onError: (err) => toast.error(err.response?.data?.error || 'Sync failed') });
+  const del = useMutation({ mutationFn: deleteBug, onSuccess: () => { refresh(); toast.success('Bug deleted'); } });
   if (bugs.length === 0) return null;
 
   const SEV = {

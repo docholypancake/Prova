@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { getRun, updateRunCase, completeRun, uploadScreenshot, createBug, syncBugToGitHub } from '../api';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -30,9 +31,9 @@ export default function RunExecute() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['run', id] });
 
   const setResult = useMutation({ mutationFn: ({ caseId, data }) => updateRunCase(id, caseId, data), onSuccess: () => invalidate() });
-  const finish = useMutation({ mutationFn: () => completeRun(id), onSuccess: () => invalidate() });
-  const reportBug = useMutation({ mutationFn: ({ projectId, data }) => createBug(projectId, data), onSuccess: (bug) => setBugByCase((m) => ({ ...m, [bug.testCaseId]: bug })) });
-  const syncBug = useMutation({ mutationFn: (bugId) => syncBugToGitHub(bugId), onSuccess: (bug) => setBugByCase((m) => ({ ...m, [bug.testCaseId]: bug })) });
+  const finish = useMutation({ mutationFn: () => completeRun(id), onSuccess: (res) => { invalidate(); toast.success(`Run finished — ${res.summary.passed}/${res.summary.total} passed`); } });
+  const reportBug = useMutation({ mutationFn: ({ projectId, data }) => createBug(projectId, data), onSuccess: (bug) => { setBugByCase((m) => ({ ...m, [bug.testCaseId]: bug })); toast.success('Bug logged'); } });
+  const syncBug = useMutation({ mutationFn: (bugId) => syncBugToGitHub(bugId), onSuccess: (bug) => { setBugByCase((m) => ({ ...m, [bug.testCaseId]: bug })); toast.success(`Synced to GitHub Issue #${bug.github?.issueNumber}`); }, onError: (err) => toast.error(err.response?.data?.error || 'Sync failed') });
 
   const cases = run?.cases || [];
   const current = cases[active];
@@ -74,7 +75,7 @@ export default function RunExecute() {
           const caseId = current.testCaseId?._id || current.testCaseId;
           await updateRunCase(id, caseId, { screenshotUrl: url });
           invalidate();
-        } catch (err) { alert(err.response?.data?.error || 'Screenshot upload failed'); }
+        } catch (err) { toast.error(err.response?.data?.error || 'Screenshot upload failed'); }
         finally { setUploading(false); }
       };
       reader.readAsDataURL(item.getAsFile());
@@ -107,7 +108,7 @@ export default function RunExecute() {
               <button onClick={() => confirm('Finish this run?') && finish.mutate()} className="btn btn-primary">Finish Run</button>
             ) : (
               <>
-                <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/share/${run.shareToken}`); alert('Shareable report link copied'); }} className="btn btn-ghost">Copy share link</button>
+                <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/share/${run.shareToken}`); toast.success('Shareable report link copied'); }} className="btn btn-ghost">Copy share link</button>
                 <span className="text-sm font-semibold text-app">{passed}/{total} passed</span>
               </>
             )}
