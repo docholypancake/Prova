@@ -129,6 +129,20 @@ router.put(
         if (req.body[f] !== undefined) entry[f] = req.body[f];
       });
       await req.run.save();
+      if (req.body.result !== undefined) {
+        posthog.capture({
+          distinctId: req.user._id.toString(),
+          event: 'test case result updated',
+          properties: {
+            run_id: req.run._id.toString(),
+            case_id: req.params.caseId,
+            project_id: req.project._id.toString(),
+            result: req.body.result,
+            has_note: !!req.body.note,
+            has_screenshot: !!req.body.screenshotUrl,
+          },
+        });
+      }
       res.json({ run: req.run });
     } catch (err) {
       next(err);
