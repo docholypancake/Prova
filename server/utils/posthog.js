@@ -19,6 +19,7 @@ if (!process.env.POSTHOG_API_KEY) {
     flushInterval: 3000,
     flushAt: 1, // flush immediately after every event — avoids data loss on Render free tier
   });
+  posthog.on('error', (err) => console.error('[posthog] send error:', err.message));
   console.log('[posthog] analytics enabled →', process.env.POSTHOG_HOST || 'https://eu.i.posthog.com');
   module.exports = posthog;
 }
